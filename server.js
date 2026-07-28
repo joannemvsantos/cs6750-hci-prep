@@ -14,33 +14,30 @@ const config = JSON.parse(fs.readFileSync(path.join(__dirname, 'vault-config.jso
 const BACKLOG_FILE = config.backlogFile;
 
 const WK_RE = /^- \[([ xX])\] CS6750 Wk(\d+) \(([^)]+)\): next (\d{4}-\d{2}-\d{2})/;
-const WEEK_ITEM_RE = /^- \[([ xX])\] (Content|Assignments|Participation\/misc): (.+)$/;
-const READING_RE = /^- \[([ xX])\] Week (\d+) — (.+)$/;
+const WEEK_ITEM_RE = /^- \[([ xX])\] (Content|Reading|Assignments|Participation\/misc): (.+)$/;
 const CHECKBOX_RE = /^- \[([ xX])\] (.+)$/;
 const SEMESTER_RE = /Semester start:.*?(\d{4}-\d{2}-\d{2})/;
 const LECTURE_RE = /Current lecture progress: (.+)$/;
 
-const DETAIL_FIELD = { Content: 'content', Assignments: 'assignments', 'Participation/misc': 'misc' };
+const DETAIL_FIELD = { Content: 'content', Reading: 'reading', Assignments: 'assignments', 'Participation/misc': 'misc' };
 
-// Walks every line of the Backlog file, tracking which ## section (and, inside the
-// Required Reading List, which **Test N material** subsection) each line belongs to.
+// Walks every line of the Backlog file, tracking which ## section each line belongs to.
 // Calls onItem(...) for every checkbox-syntax line found, with enough info to both
 // render it (parsing) and find it again later (toggling). The per-week detail items
-// ("- [ ] Content: ...", "- [ ] Assignments: ...", "- [ ] Participation/misc: ...") are
-// themselves real checkboxes, attached to whichever Wk was seen most recently, with
-// kind 'weekDetail' — each is its own independently toggleable checklist item.
+// ("- [ ] Content: ...", "- [ ] Reading: ...", "- [ ] Assignments: ...",
+// "- [ ] Participation/misc: ...") are themselves real checkboxes, attached to whichever
+// Wk was seen most recently, with kind 'weekDetail' — each is its own independently
+// toggleable checklist item (the Required Reading List used to be a separate section;
+// its items now live here, nested under the matching Wk line, one list per week).
 function walkLines(lines, onItem) {
   let section = '';
-  let subsection = '';
   let currentWeek = null;
 
   lines.forEach((rawLine, idx) => {
     const trimmed = rawLine.trim();
 
-    if (trimmed.startsWith('## ')) { section = trimmed.replace(/^##\s*/, ''); subsection = ''; currentWeek = null; return; }
+    if (trimmed.startsWith('## ')) { section = trimmed.replace(/^##\s*/, ''); currentWeek = null; return; }
     if (trimmed.startsWith('### ')) return; // sub-heading, keep parent section
-    if (/^\*\*Test 1 material\*\*/.test(trimmed)) { subsection = 'Test 1'; return; }
-    if (/^\*\*Test 2 material\*\*/.test(trimmed)) { subsection = 'Test 2'; return; }
 
     const wkMatch = trimmed.match(WK_RE);
     if (wkMatch) {
@@ -62,17 +59,6 @@ function walkLines(lines, onItem) {
         done: weekItemMatch[1].toLowerCase() === 'x'
       });
       return;
-    }
-
-    if (section.startsWith('Required Reading List')) {
-      const rMatch = trimmed.match(READING_RE);
-      if (rMatch) {
-        onItem({
-          idx, kind: 'readingList', key: parseInt(rMatch[2], 10),
-          test: subsection || null, label: rMatch[3], done: rMatch[1].toLowerCase() === 'x'
-        });
-        return;
-      }
     }
 
     const cMatch = trimmed.match(CHECKBOX_RE);
@@ -98,23 +84,25 @@ function buildState() {
   const raw = fs.readFileSync(BACKLOG_FILE, 'utf8');
   const { lines } = splitLines(raw);
 
-  const groups = { weeklyDeliverables: [], readingList: [], weekDetail: [], daily: [], weekly: [], fallPrep: [], backlogIdeas: [] };
+  const groups = { weeklyDeliverables: [], weekDetail: [], daily: [], weekly: [], fallPrep: [], backlogIdeas: [] };
   walkLines(lines, (item) => groups[item.kind].push(item));
 
   // The client (app.js) reads a "week" field for display/toggle purposes — alias it from
   // the internal "key" field used for locating the line in the file (kept for toggling).
   groups.weeklyDeliverables.forEach((wk) => { wk.week = wk.key; });
-  groups.readingList.forEach((r) => { r.week = r.key; });
 
   // Fold the flat weekDetail checklist items into each week's structured breakdown
-  // (content / assignments / misc), each entry keeping its own key/label/done for toggling.
+  // (content / reading / assignments / misc), each entry keeping its own key/label/done
+  // for toggling. Reading items are the former standalone Required Reading List, now
+  // nested per-week alongside that week's Content/Assignments/Participation.
+  const emptyDetail = () => ({ content: [], reading: [], assignments: [], misc: [] });
   const details = {};
   groups.weekDetail.forEach((item) => {
-    if (!details[item.week]) details[item.week] = { content: [], assignments: [], misc: [] };
+    if (!details[item.week]) details[item.week] = emptyDetail();
     details[item.week][item.field].push({ key: item.key, label: item.label, done: item.done });
   });
   groups.weeklyDeliverables.forEach((wk) => {
-    wk.detail = details[wk.key] || { content: [], assignments: [], misc: [] };
+    wk.detail = details[wk.key] || emptyDetail();
   });
 
   let semesterStart = null;
@@ -148,7 +136,7 @@ function toggleItem(kind, key) {
   let targetIdx = -1;
   walkLines(lines, (item) => {
     if (targetIdx !== -1 || item.kind !== kind) return;
-    const matches = (kind === 'weeklyDeliverables' || kind === 'readingList')
+    const matches = kind === 'weeklyDeliverables'
       ? item.key === Number(key)
       : item.key === key;
     if (matches) targetIdx = item.idx;

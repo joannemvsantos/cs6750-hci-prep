@@ -21,7 +21,7 @@ function escapeHtml(s) {
 }
 
 function itemRow(item, kind) {
-  const key = (kind === 'weeklyDeliverables' || kind === 'readingList') ? item.week : item.label;
+  const key = kind === 'weeklyDeliverables' ? item.week : item.label;
   return `<div class="item-row toggleable ${item.done ? 'done' : ''}" data-kind="${kind}" data-key="${escapeHtml(key)}">
     <div class="box"></div><span class="txt">${escapeHtml(item.label)}</span>
   </div>`;
@@ -71,13 +71,13 @@ function render(state) {
   const wkDone = state.weeklyDeliverables.filter((w) => w.done).length;
   const overdue = state.weeklyDeliverables.filter((w) => !w.done && weekStatus(w, today).cls === 'status-overdue');
   const dueSoon = state.weeklyDeliverables.filter((w) => !w.done && weekStatus(w, today).cls === 'status-due');
-  const readDone = state.readingList.filter((r) => r.done).length;
+  const detailDone = state.weekDetail.filter((i) => i.done).length;
   const dailyDone = state.daily.filter((d) => d.done).length;
   const fallPrepDone = state.fallPrep.filter((f) => f.done).length;
 
   let summaryHtml = '<div class="grade-grid">';
   summaryHtml += `<div class="grade-tile"><div class="pct">${wkDone}/${state.weeklyDeliverables.length}</div><div class="name">Weekly deliverables</div></div>`;
-  summaryHtml += `<div class="grade-tile"><div class="pct">${readDone}/${state.readingList.length}</div><div class="name">Readings done</div></div>`;
+  summaryHtml += `<div class="grade-tile"><div class="pct">${detailDone}/${state.weekDetail.length}</div><div class="name">Checklist items done</div></div>`;
   summaryHtml += `<div class="grade-tile"><div class="pct">${dailyDone}/${state.daily.length}</div><div class="name">Daily habit</div></div>`;
   summaryHtml += `<div class="grade-tile"><div class="pct">${fallPrepDone}/${state.fallPrep.length}</div><div class="name">Fall prep</div></div>`;
   summaryHtml += '</div>';
@@ -92,13 +92,14 @@ function render(state) {
   document.getElementById('dashboardSummary').innerHTML = summaryHtml;
 
   // Weeks tab — click the checkbox to mark a week done (writes to the vault);
-  // click anywhere else on the card to expand/collapse its Content/Assignments/Participation detail.
+  // click anywhere else on the card to expand/collapse its Content/Reading/Assignments/Participation
+  // checklist (Reading is the former standalone Required Reading List, now folded in per week).
   let weeksHtml = '';
   state.weeklyDeliverables.forEach((wk) => {
     const s = weekStatus(wk, today);
     const isOpen = expandedWeeks.has(wk.week);
     const d = wk.detail || {};
-    const bodyHtml = detailChecklist('Content', d.content) + detailChecklist('Assignments', d.assignments) + detailChecklist('Participation / misc', d.misc);
+    const bodyHtml = detailChecklist('Content', d.content) + detailChecklist('Reading', d.reading) + detailChecklist('Assignments', d.assignments) + detailChecklist('Participation / misc', d.misc);
     weeksHtml += `
       <div class="week-card ${wk.done ? 'done' : ''} ${isOpen ? 'open' : ''}" data-week="${wk.week}">
         <div class="wk-summary">
@@ -119,16 +120,6 @@ function render(state) {
       </div>`;
   });
   document.getElementById('weeksContainer').innerHTML = weeksHtml;
-
-  // Reading tab
-  const test1 = state.readingList.filter((r) => r.test === 'Test 1');
-  const test2 = state.readingList.filter((r) => r.test === 'Test 2');
-  let readingHtml = '<div class="card"><div class="section-block"><h4>Test 1 material (Weeks 1–6)</h4>';
-  readingHtml += test1.map((r) => itemRow(r, 'readingList')).join('');
-  readingHtml += '</div><div class="section-block"><h4>Test 2 material (Weeks 7–13)</h4>';
-  readingHtml += test2.map((r) => itemRow(r, 'readingList')).join('');
-  readingHtml += '</div></div>';
-  document.getElementById('readingContainer').innerHTML = readingHtml;
 
   // Habits tab
   let habitsHtml = '<div class="card"><div class="section-block"><h4>Daily</h4>';

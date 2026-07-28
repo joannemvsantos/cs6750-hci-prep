@@ -103,8 +103,14 @@ function buildState() {
       details[week][field] = items;
     }
   );
+  // The client (app.js) reads a "week" field for display/toggle purposes — alias it from
+  // the internal "key" field used for locating the line in the file (kept for toggling).
   groups.weeklyDeliverables.forEach((wk) => {
+    wk.week = wk.key;
     wk.detail = details[wk.key] || { content: [], assignments: [], misc: [] };
+  });
+  groups.readingList.forEach((r) => {
+    r.week = r.key;
   });
 
   let semesterStart = null;

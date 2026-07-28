@@ -3,514 +3,142 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CS 6750 HCI — A-Game Tracker</title>
-<style>
-  :root{
-    --navy:#003057;
-    --navy-2:#00203f;
-    --gold:#B3A369;
-    --gold-2:#eee2c0;
-    --ink:#1c2530;
-    --paper:#faf9f6;
-    --card:#ffffff;
-    --line:#e5e1d6;
-    --green:#2f7a4f;
-    --red:#b5442e;
-    --shadow: 0 6px 24px rgba(0,48,87,0.08);
-  }
-  *{box-sizing:border-box;}
-  html,body{margin:0;padding:0;}
-  body{
-    font-family: 'Georgia', 'Iowan Old Style', serif;
-    background: var(--paper);
-    color: var(--ink);
-    line-height:1.55;
-  }
-  a{color:var(--navy);}
-  .wrap{max-width:980px;margin:0 auto;padding:0 20px 80px;}
-
-  /* HERO */
-  header.hero{
-    background: linear-gradient(135deg, var(--navy) 0%, var(--navy-2) 55%, #001a33 100%);
-    color:#fff;
-    padding:48px 20px 64px;
-    position:relative;
-    overflow:hidden;
-  }
-  header.hero::after{
-    content:"";
-    position:absolute; inset:0;
-    background: radial-gradient(circle at 85% 20%, rgba(179,163,105,0.25), transparent 45%);
-  }
-  .hero-inner{max-width:980px;margin:0 auto;position:relative;z-index:1;}
-  .eyebrow{
-    text-transform:uppercase; letter-spacing:.14em; font-size:12px; color:var(--gold-2);
-    font-family: 'Helvetica Neue', Arial, sans-serif; font-weight:600;
-  }
-  h1{
-    font-size:2.3rem; margin:10px 0 6px; font-family: 'Helvetica Neue', Arial, sans-serif;
-    font-weight:700; letter-spacing:-0.01em;
-  }
-  .sub{color:#dfe6ee; max-width:620px; font-size:1.02rem;}
-  .hero-stats{
-    display:flex; gap:14px; flex-wrap:wrap; margin-top:28px;
-  }
-  .stat{
-    background:rgba(255,255,255,0.08);
-    border:1px solid rgba(255,255,255,0.18);
-    border-radius:12px; padding:14px 18px; min-width:130px;
-    backdrop-filter:blur(4px);
-    font-family:'Helvetica Neue', Arial, sans-serif;
-  }
-  .stat .num{font-size:1.6rem; font-weight:700; color:var(--gold-2);}
-  .stat .lbl{font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:#c9d4e0;}
-
-  .progress-shell{
-    margin-top:26px; background:rgba(255,255,255,0.12); border-radius:999px; height:14px; overflow:hidden;
-    border:1px solid rgba(255,255,255,0.25);
-  }
-  .progress-fill{
-    height:100%; background:linear-gradient(90deg, var(--gold) 0%, #d8c98a 100%);
-    width:0%; transition:width .4s ease; border-radius:999px;
-  }
-  .progress-caption{font-family:'Helvetica Neue',Arial,sans-serif; font-size:12px; color:#dfe6ee; margin-top:6px;}
-
-  /* NAV */
-  nav.tabs{
-    position:sticky; top:0; z-index:20; background:var(--paper);
-    border-bottom:1px solid var(--line);
-    padding:10px 0; overflow-x:auto; white-space:nowrap;
-    font-family:'Helvetica Neue', Arial, sans-serif;
-  }
-  nav.tabs .wrap{padding-bottom:0; display:flex; gap:6px;}
-  nav.tabs button{
-    background:none; border:1px solid transparent; color:#57606d;
-    padding:8px 14px; border-radius:8px; font-size:13.5px; cursor:pointer;
-    font-weight:600;
-  }
-  nav.tabs button.active{ background:var(--navy); color:#fff; }
-  nav.tabs button:hover:not(.active){ background:var(--gold-2); color:var(--navy); }
-
-  section.panel{ display:none; padding-top:34px; }
-  section.panel.active{ display:block; }
-
-  h2.section-title{
-    font-family:'Helvetica Neue', Arial, sans-serif; color:var(--navy);
-    font-size:1.5rem; margin:0 0 4px; display:flex; align-items:center; gap:10px;
-  }
-  p.section-desc{ color:#5b6472; max-width:720px; margin-top:0; }
-
-  .card{
-    background:var(--card); border:1px solid var(--line); border-radius:14px;
-    padding:20px 22px; margin-bottom:16px; box-shadow:var(--shadow);
-  }
-  .card h3{ margin-top:0; font-family:'Helvetica Neue', Arial, sans-serif; color:var(--navy); font-size:1.05rem;}
-
-  /* checkboxes */
-  label.chk{
-    display:flex; align-items:flex-start; gap:10px; padding:7px 4px;
-    border-radius:8px; cursor:pointer; font-size:0.97rem;
-  }
-  label.chk:hover{ background:#f5f2e9; }
-  label.chk input{ margin-top:4px; width:17px; height:17px; accent-color:var(--gold); flex-shrink:0; cursor:pointer; }
-  label.chk span.txt{ flex:1; }
-  label.chk input:checked ~ span.txt{ color:#8a8f96; text-decoration:line-through; }
-  .hrs{ color:var(--gold); font-family:'Helvetica Neue',Arial,sans-serif; font-weight:700; font-size:12px; }
-
-  /* grading grid */
-  .grade-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin:18px 0; }
-  .grade-tile{
-    background:var(--navy); color:#fff; border-radius:12px; padding:16px; text-align:center;
-    font-family:'Helvetica Neue',Arial,sans-serif;
-  }
-  .grade-tile .pct{ font-size:1.7rem; font-weight:800; color:var(--gold-2); }
-  .grade-tile .name{ font-size:12.5px; text-transform:uppercase; letter-spacing:.05em; margin-top:4px;}
-  .a-callout{
-    background:var(--gold-2); border:1px solid var(--gold); border-radius:12px; padding:14px 18px;
-    font-size:.95rem; margin-top:6px;
-  }
-
-  /* week accordion */
-  details.week{
-    background:var(--card); border:1px solid var(--line); border-radius:12px;
-    margin-bottom:10px; box-shadow:var(--shadow); overflow:hidden;
-  }
-  details.week[open] summary{ border-bottom:1px solid var(--line); background:#f8f6ef; }
-  details.week summary{
-    cursor:pointer; padding:14px 18px; font-family:'Helvetica Neue',Arial,sans-serif;
-    display:flex; justify-content:space-between; align-items:center; gap:10px; list-style:none;
-  }
-  details.week summary::-webkit-details-marker{ display:none; }
-  .wk-left{ display:flex; align-items:center; gap:12px; }
-  .wk-badge{
-    background:var(--navy); color:var(--gold-2); font-weight:700; font-size:12.5px;
-    border-radius:8px; padding:5px 9px; min-width:56px; text-align:center;
-  }
-  .wk-title{ font-weight:700; color:var(--navy); }
-  .wk-due{ font-size:12.5px; color:#77808c; }
-  .wk-phase{ font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; color:var(--gold); font-weight:700;}
-  .wk-body{ padding:6px 18px 16px; }
-  .wk-body h4{ font-family:'Helvetica Neue',Arial,sans-serif; font-size:12.5px; text-transform:uppercase;
-    letter-spacing:.05em; color:#8a8f96; margin:14px 0 2px; }
-  .wk-mini-progress{
-    height:6px; background:#e9e6db; border-radius:99px; width:90px; overflow:hidden;
-  }
-  .wk-mini-fill{ height:100%; background:var(--gold); width:0%; }
-
-  table.plain{ width:100%; border-collapse:collapse; margin:10px 0; font-size:.93rem; }
-  table.plain th, table.plain td{ border:1px solid var(--line); padding:8px 10px; text-align:left; vertical-align:top; }
-  table.plain th{ background:var(--navy); color:#fff; font-family:'Helvetica Neue',Arial,sans-serif; font-size:12.5px; }
-  table.plain tr:nth-child(even) td{ background:#faf8f2; }
-
-  .tip{
-    border-left:4px solid var(--gold); background:#fffdf7; padding:10px 16px; margin:10px 0; border-radius:0 8px 8px 0;
-  }
-  .tip b{ color:var(--navy); }
-
-  .src-list{ list-style:none; padding:0; margin:0; }
-  .src-list li{
-    padding:12px 16px; border:1px solid var(--line); border-radius:10px; margin-bottom:8px; background:var(--card);
-  }
-  .src-list a{ font-weight:700; }
-  .src-note{ font-size:.88rem; color:#6b7481; margin-top:2px; }
-
-  footer{ text-align:center; padding:30px 20px; color:#8a8f96; font-family:'Helvetica Neue',Arial,sans-serif; font-size:12.5px; }
-
-  .badge-inline{
-    display:inline-block; background:var(--gold-2); color:var(--navy); border-radius:6px; padding:2px 8px;
-    font-size:11px; font-weight:700; font-family:'Helvetica Neue',Arial,sans-serif; margin-left:6px;
-  }
-  .reset-btn{
-    font-family:'Helvetica Neue',Arial,sans-serif; font-size:12px; background:none; border:1px solid var(--line);
-    color:#8a8f96; padding:6px 12px; border-radius:8px; cursor:pointer; float:right;
-  }
-  .reset-btn:hover{ border-color:var(--red); color:var(--red); }
-</style>
+<title>CS 6750 HCI — Dashboard</title>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <header class="hero">
   <div class="hero-inner">
     <div class="eyebrow">Georgia Tech OMSCS · CS 6750 · Human-Computer Interaction</div>
-    <h1>Joanne's HCI A-Game Tracker</h1>
-    <p class="sub">Fall 2026 starts <strong>August 24</strong>. Today is <strong id="todayLabel">—</strong>, which leaves a real head start — this page turns that into a week-by-week plan, not just good intentions.</p>
+    <h1>HCI Dashboard</h1>
+    <p class="sub" id="heroSub">Reading live from your Obsidian vault…</p>
     <div class="hero-stats">
       <div class="stat"><div class="num" id="daysLeft">–</div><div class="lbl">Days to Day 1</div></div>
-      <div class="stat"><div class="num" id="overallPct">0%</div><div class="lbl">Checklist done</div></div>
+      <div class="stat"><div class="num" id="overallPct">–</div><div class="lbl">Vault progress</div></div>
       <div class="stat"><div class="num">90+</div><div class="lbl">= A, no curve</div></div>
     </div>
     <div class="progress-shell"><div class="progress-fill" id="overallBar"></div></div>
-    <div class="progress-caption" id="overallCaption">0 of 0 items checked</div>
+    <div class="progress-caption" id="overallCaption">Loading…</div>
+    <div class="sync-line" id="syncLine"></div>
   </div>
 </header>
 
 <nav class="tabs">
   <div class="wrap">
-    <button data-tab="overview" class="active">Overview</button>
-    <button data-tab="prep">Pre-Semester (Now→Aug 24)</button>
-    <button data-tab="weeks">17-Week Battle Plan</button>
-    <button data-tab="tests">Test &amp; Quiz Prep</button>
-    <button data-tab="participation">Participation Points</button>
-    <button data-tab="strategy">A-Strategy Notes</button>
+    <button data-tab="dashboard" class="active">Dashboard</button>
+    <button data-tab="weeks">17-Week Plan</button>
+    <button data-tab="reading">Reading List</button>
+    <button data-tab="habits">Habits &amp; Prep</button>
+    <button data-tab="reference">Reference</button>
     <button data-tab="sources">Sources</button>
   </div>
 </nav>
 
 <div class="wrap">
 
-  <!-- OVERVIEW -->
-  <section class="panel active" id="overview">
-    <h2 class="section-title">How the grade breaks down</h2>
-    <p class="section-desc">Straight from the official CS6750 syllabus (structure has been consistent across recent semesters — Spring 2025 shown; exact assignment names may shift slightly for Fall 2026). There is <strong>no curve</strong>: 90%+ average is an A, period.</p>
-
-    <div class="grade-grid">
-      <div class="grade-tile"><div class="pct">20%</div><div class="name">Quizzes (4)</div></div>
-      <div class="grade-tile"><div class="pct">20%</div><div class="name">Tests (2)</div></div>
-      <div class="grade-tile"><div class="pct">20%</div><div class="name">Homework (4)</div></div>
-      <div class="grade-tile"><div class="pct">30%</div><div class="name">Projects (Indiv + Team)</div></div>
-      <div class="grade-tile"><div class="pct">10%</div><div class="name">Participation</div></div>
-    </div>
-    <div class="a-callout">
-      <b>Why this is a get-an-A-if-you-want-it class:</b> the professor says explicitly that it's "intentionally possible for every student to receive an A." That means the game isn't beating a curve — it's not losing easy points: participation, quiz prep, and reading-based test questions are the ones people leave on the table. The plan on this page is built around closing exactly those gaps.
-    </div>
-
-    <div class="card">
-      <h3>The four grade components, in one line each</h3>
-      <label class="chk"><input type="checkbox" data-key="ov-1"><span class="txt"><b>Homework (4, 20%)</b> — written, JDF-formatted, ~4 questions each, mostly Unit 2 (Principles). Peer-reviewed after submission.</span></label>
-      <label class="chk"><input type="checkbox" data-key="ov-2"><span class="txt"><b>Quizzes (4, 20%)</b> — open-ended short answer, proctored (Honorlock), closed book/note/internet, 120 min. 4 questions from lecture video, 1 from that week's reading.</span></label>
-      <label class="chk"><input type="checkbox" data-key="ov-3"><span class="txt"><b>Tests (2, 20%)</b> — 30 multiple-choice/multiple-correct questions each, partial credit, proctored. Pull straight from the Required Reading List.</span></label>
-      <label class="chk"><input type="checkbox" data-key="ov-4"><span class="txt"><b>Individual + Team Project (30%)</b> — full design lifecycle twice: needfinding → alternatives → prototypes → evaluation → higher-fidelity prototype + video.</span></label>
-      <label class="chk"><input type="checkbox" data-key="ov-5"><span class="txt"><b>Participation (10%)</b> — peer reviews, forum posts, surveys, optional bonus tasks. Easiest 10% in the course if you stay consistent — see the Participation tab.</span></label>
-    </div>
-
-    <div class="card">
-      <h3>Required materials — line these up before Day 1</h3>
-      <label class="chk"><input type="checkbox" data-key="ov-mat-1"><span class="txt">Access/order <i>Human-Computer Interaction</i>, 3rd ed. — Dix, Finlay, Abowd, Beale (primary text)</span></label>
-      <label class="chk"><input type="checkbox" data-key="ov-mat-2"><span class="txt">Access/order <i>The Design of Everyday Things</i> — Don Norman (secondary text; alumni consistently say it's worth owning outright, not just reading the assigned chapters)</span></label>
-      <label class="chk"><input type="checkbox" data-key="ov-mat-3"><span class="txt">Grab the JDF (Joint Document Format) template and, ideally, set up an Overleaf account now — written work must be JDF-formatted and LaTeX renders it cleanly (Word conversions reportedly lose formatting/points)</span></label>
-      <label class="chk"><input type="checkbox" data-key="ov-mat-4"><span class="txt">Confirm Canvas, Peer Feedback, PeerSurvey, and CITI Training account access as soon as they're provisioned</span></label>
-    </div>
+  <section class="panel active" id="dashboard">
+    <h2 class="section-title">This week, at a glance</h2>
+    <p class="section-desc">Pulled live from <code>🎓 OMSCS Backlog.md</code> in your vault — check things off in Obsidian and they'll show here within 5 seconds. This page never writes to your vault.</p>
+    <div id="dashboardSummary"></div>
   </section>
 
-  <!-- PREP -->
-  <section class="panel" id="prep">
-    <h2 class="section-title">Pre-semester sprint — July 28 → August 23</h2>
-    <p class="section-desc">~4 weeks before Day 1. Course lecture videos are accessible ahead of the semester, so the highest-leverage move is arriving at Week 1 already ahead on lectures and Unit-2 reading, instead of starting cold.</p>
-
-    <div class="card">
-      <h3>Daily cadence (repeat every day until Aug 24) <span class="badge-inline">~30–45 min/day</span></h3>
-      <label class="chk"><input type="checkbox" data-key="prep-d1"><span class="txt">Watch at least 1 HCI lecture (Lessons 1.x → 2.x → 3.x, in order)</span></label>
-      <label class="chk"><input type="checkbox" data-key="prep-d2"><span class="txt">Read/prep the current week's item from the Required Reading List (~15–20 min, paced to the ~1–2 hrs/week the course expects)</span></label>
-      <label class="chk"><input type="checkbox" data-key="prep-d3"><span class="txt">Jot one short note: what you learned + one candidate real-world example (interface, app, habit) you could use later for Homework 1's analysis</span></label>
-    </div>
-
-    <div class="card">
-      <h3>One-time setup tasks (do these in the next 1–2 weeks)</h3>
-      <label class="chk"><input type="checkbox" data-key="prep-1"><span class="txt">Order/access both required texts (Dix et al. HCI 3rd ed. + Norman's Design of Everyday Things)</span></label>
-      <label class="chk"><input type="checkbox" data-key="prep-2"><span class="txt">Download the JDF template; open it in Overleaf once just to see how it compiles before you're under deadline pressure</span></label>
-      <label class="chk"><input type="checkbox" data-key="prep-3"><span class="txt">Check the CS6750 course site (omscs6750.gatech.edu) for the Fall 2026 syllabus as soon as it posts — swap the projected dates on this page for the real ones</span></label>
-      <label class="chk"><input type="checkbox" data-key="prep-4"><span class="txt">If CITI Training (human-subjects research ethics cert) opens early, complete it now — it's normally due mid-course but the cert itself can be done anytime, and it's dry, tedious clicking better done before you're busy</span></label>
-      <label class="chk"><input type="checkbox" data-key="prep-5"><span class="txt">Check Honorlock proctoring software requirements and install/test it ahead of the first quiz</span></label>
-      <label class="chk"><input type="checkbox" data-key="prep-6"><span class="txt">Block a recurring weekly study session on your calendar for the whole semester (course is designed for ~10 hrs/week in Fall)</span></label>
-      <label class="chk"><input type="checkbox" data-key="prep-7"><span class="txt">Skim the Participation policy now (Participation tab) so forum habits start Day 1 instead of Week 8</span></label>
-      <label class="chk"><input type="checkbox" data-key="prep-8"><span class="txt">Read the whole syllabus the moment it posts — past semesters bury a hidden 1-point "secret survey" link inside it as a reward for reading closely</span></label>
-    </div>
-
-    <div class="tip"><b>Why front-load lectures specifically:</b> the reading list is the thing that actually determines test scores (test questions are pulled from readings), while lectures are the thing most students under-invest in early and then cram before quizzes. Getting 1–2 units of lecture buffer built up now means that once real deadlines hit in September, you're spending your weekly hours on writing and reading — not catching up on video.</div>
-  </section>
-
-  <!-- WEEKS -->
   <section class="panel" id="weeks">
-    <h2 class="section-title">17-week battle plan <span class="badge-inline">Projected Fall 2026 dates</span></h2>
-    <p class="section-desc">Built from the official Spring 2025 CS6750 calendar (structure/hour estimates have stayed consistent across recent semesters) mapped onto a Monday, Aug 24 2026 start with Sunday 11:59pm AoE deadlines. <b>Treat every date here as provisional</b> until the real Fall 2026 syllabus posts — then just swap the numbers.</p>
-
+    <h2 class="section-title">17-week deliverable plan <span class="badge-inline">Projected Fall 2026 dates</span></h2>
+    <p class="section-desc">Status (done / overdue / upcoming) comes straight from the checkbox and date on each Wk line in the vault — the same signal your morning-briefing skill uses. Check the box in Obsidian once a deliverable is submitted.</p>
     <div id="weeksContainer"></div>
   </section>
 
-  <!-- TESTS -->
-  <section class="panel" id="tests">
-    <h2 class="section-title">Test &amp; quiz prep cheat sheet</h2>
+  <section class="panel" id="reading">
+    <h2 class="section-title">Required Reading List</h2>
+    <p class="section-desc">Test 1 draws from Weeks 1–6, Test 2 from Weeks 7–13. Checked state comes from the vault.</p>
+    <div id="readingContainer"></div>
+  </section>
+
+  <section class="panel" id="habits">
+    <h2 class="section-title">Habits &amp; prep checklists</h2>
+    <p class="section-desc">Daily / Weekly / Fall-Prep / Backlog-ideas sections from the vault, read-only here.</p>
+    <div id="habitsContainer"></div>
+  </section>
+
+  <section class="panel" id="reference">
+    <h2 class="section-title">Reference — grading, tests, participation, strategy</h2>
+    <p class="section-desc">Static reference material (doesn't change week to week, so it isn't vault-tracked).</p>
 
     <div class="card">
-      <h3>Tests (2 × 10% = 20%)</h3>
-      <p>30 multiple-choice/multiple-correct questions (5 options, 1–4 correct, partial credit), proctored via Honorlock. Pulled from the <b>Required Reading List</b>, not the lecture videos — this is the single biggest thing people get wrong by studying lectures instead of papers.</p>
+      <h3>Grade breakdown</h3>
+      <div class="grade-grid">
+        <div class="grade-tile"><div class="pct">20%</div><div class="name">Quizzes (4)</div></div>
+        <div class="grade-tile"><div class="pct">20%</div><div class="name">Tests (2)</div></div>
+        <div class="grade-tile"><div class="pct">20%</div><div class="name">Homework (4)</div></div>
+        <div class="grade-tile"><div class="pct">30%</div><div class="name">Projects (Indiv + Team)</div></div>
+        <div class="grade-tile"><div class="pct">10%</div><div class="name">Participation</div></div>
+      </div>
+      <div class="a-callout">No curve — 90%+ average is an A. Explicitly designed so every student can get one.</div>
+    </div>
+
+    <div class="card">
+      <h3>Tests (2 × 10%)</h3>
       <table class="plain">
         <tr><th>Test</th><th>Covers</th><th>Reading weeks</th></tr>
-        <tr><td>Test 1</td><td>Lessons 2.1–2.5 (Principles) &amp; 3.1–3.5 (Methods)</td><td>Reading weeks 1–6</td></tr>
-        <tr><td>Test 2</td><td>Lessons 2.6–2.10 (Principles) &amp; 3.6–3.8 (Methods)</td><td>Reading weeks 7–13</td></tr>
+        <tr><td>Test 1</td><td>Lessons 2.1–2.5 &amp; 3.1–3.5</td><td>1–6</td></tr>
+        <tr><td>Test 2</td><td>Lessons 2.6–2.10 &amp; 3.6–3.8</td><td>7–13</td></tr>
       </table>
-      <label class="chk"><input type="checkbox" data-key="test-1"><span class="txt">Build a running one-page summary per reading (author, core claim, 1 example) as you go — this becomes your test-review sheet instead of a re-read marathon</span></label>
-      <label class="chk"><input type="checkbox" data-key="test-2"><span class="txt">Re-read your summary sheet + skim the actual papers again in the week before each test, don't rely on memory from weeks ago</span></label>
-      <label class="chk"><input type="checkbox" data-key="test-3"><span class="txt">Do the Honorlock onboarding quiz well before test week so tech issues don't eat exam time</span></label>
+      <p>30 multiple-choice/multiple-correct questions each, partial credit, proctored via Honorlock. Pulled from the readings, not the lectures.</p>
     </div>
 
     <div class="card">
-      <h3>Quizzes (4 × 5% = 20%)</h3>
-      <p>Open-ended short-answer, 120 minutes, closed book/note/internet. 4 of 5 questions come from lecture video content, 1 from that week's reading.</p>
-      <label class="chk"><input type="checkbox" data-key="quiz-1"><span class="txt">Re-watch your own notes (not the full lecture) the day before each quiz — since it's closed-book, recall practice beats re-watching</span></label>
-      <label class="chk"><input type="checkbox" data-key="quiz-2"><span class="txt">Explicitly answer "what would a 5th question from this week's single reading look like?" as self-quiz practice</span></label>
-      <label class="chk"><input type="checkbox" data-key="quiz-3"><span class="txt">You have 2 hours but it's designed to take much less — don't schedule quizzes back-to-back with something else in case Honorlock hiccups</span></label>
+      <h3>Quizzes (4 × 5%)</h3>
+      <p>Open-ended short answer, 120 min, closed book/note/internet. 4 questions from lecture video, 1 from that week's reading.</p>
     </div>
-
-    <div class="tip"><b>Academic honesty reminder:</b> per the syllabus, you may not remove or retain any proctored-exam content (no screenshots, no writing down questions, no discussing specifics with classmates afterward) — treat this as a hard line, not a norm to test.</div>
-  </section>
-
-  <!-- PARTICIPATION -->
-  <section class="panel" id="participation">
-    <h2 class="section-title">Participation — the easiest 10% in the course</h2>
-    <p class="section-desc">Graded out of 100 points → scaled to 10% of your final grade. Finalized the Friday of Week 17 (complete everything by Thursday of Week 17). No mid-semester deadline — you can front-load or back-load, but front-loading avoids a stressful Week 17 scramble.</p>
-
-    <table class="plain">
-      <tr><th>Activity</th><th>Points</th><th>Notes</th></tr>
-      <tr><td>Peer review of a classmate's assignment</td><td>0.5–1.5 each</td><td>1.5 if submitted within 4 days of the original deadline, 1.0 within 7 days, 0.5 after. You can request extra reviews beyond your assigned 3/assignment.</td></tr>
-      <tr><td>High-quality forum post</td><td>0.1–3.0 each (max 40)</td><td>Must use your GT email on the forum account; quality-graded, not just quantity.</td></tr>
-      <tr><td>Completing a classmate's study/survey request</td><td>0.5 each</td><td>Uncapped — great filler if you like helping test others' prototypes.</td></tr>
-      <tr><td>Candidate exam question submitted</td><td>0.5 each (max 10)</td><td>Doubles as test review — writing a question forces you to know the material.</td></tr>
-      <tr><td>Annotated bibliography entry</td><td>2.0 each (max 20)</td><td>Highest point-density option — a small number of these covers a lot of ground fast.</td></tr>
-      <tr><td>Course survey (start/quarter/mid/end)</td><td>1.0 each</td><td>4 total across the semester — free points, don't skip them.</td></tr>
-      <tr><td>"Secret" syllabus-read survey</td><td>1.0</td><td>Hidden link in the syllabus, must complete before end of Week 2.</td></tr>
-    </table>
 
     <div class="card">
-      <h3>A realistic path to 100/100</h3>
-      <label class="chk"><input type="checkbox" data-key="part-1"><span class="txt">Do every peer review you're assigned, within 4 days, every time (this alone, over 17 weeks, gets you most of the way there)</span></label>
-      <label class="chk"><input type="checkbox" data-key="part-2"><span class="txt">Complete all 4 course surveys + the secret Week-2 survey (5 free points)</span></label>
-      <label class="chk"><input type="checkbox" data-key="part-3"><span class="txt">If you're short heading into Week 12 or so, top up with 2–3 annotated bibliography entries (2 pts each) rather than scrambling for forum posts</span></label>
-      <label class="chk"><input type="checkbox" data-key="part-4"><span class="txt">Post on the forum organically when you're already thinking about the material — don't manufacture posts just for points, quality is graded</span></label>
-      <label class="chk"><input type="checkbox" data-key="part-5"><span class="txt">Check your participation total at the Week 6 / Week 12 / Week 17 progress updates and course-correct early, not in Week 17</span></label>
+      <h3>Participation (10%) — points table</h3>
+      <table class="plain">
+        <tr><th>Activity</th><th>Points</th></tr>
+        <tr><td>Peer review (within 4 / 7 / 7+ days)</td><td>1.5 / 1.0 / 0.5 each</td></tr>
+        <tr><td>High-quality forum post</td><td>0.1–3.0 each (max 40)</td></tr>
+        <tr><td>Classmate study/survey participation</td><td>0.5 each</td></tr>
+        <tr><td>Candidate exam question</td><td>0.5 each (max 10)</td></tr>
+        <tr><td>Annotated bibliography entry</td><td>2.0 each (max 20)</td></tr>
+        <tr><td>Course survey (×4) + secret survey</td><td>1.0 each</td></tr>
+      </table>
+      <p>Fastest reliable path: do every assigned peer review within 4 days, plus all 4 surveys + the secret Week-2 survey.</p>
+    </div>
+
+    <div class="card">
+      <h3>A-strategy notes</h3>
+      <div class="tip"><b>Reading is the real workload</b> — test questions come from the readings, not the lectures. Budget real time for it.</div>
+      <div class="tip"><b>Buy your own copy of The Design of Everyday Things</b> — worth reading beyond the assigned chapters.</div>
+      <div class="tip"><b>JDF formatting punishes procrastination</b> — do a dry run in Overleaf before your first real deadline.</div>
+      <div class="tip"><b>Team project friction is usually logistics, not content</b> — agree on communication norms as soon as teams form.</div>
+      <div class="tip"><b>AI Collaboration Policy is narrow</b> — use AI like a study partner, never copy its output into a submission.</div>
     </div>
   </section>
 
-  <!-- STRATEGY -->
-  <section class="panel" id="strategy">
-    <h2 class="section-title">A-strategy notes (alumni + community wisdom)</h2>
-    <p class="section-desc">Synthesized from an alumnus's public write-up of the course and the same crowd-sourced patterns that show up consistently across OMSCentral reviews and OMSCS community discussion of CS6750. (Note: several of the Reddit threads you shared couldn't be fetched directly in this session — Reddit blocked automated retrieval — so this section leans on the accessible alumni account plus well-established, repeatedly-corroborated community patterns rather than quoting those threads directly. Worth reading them yourself for first-hand detail.)</p>
-
-    <div class="tip"><b>The reading load is the real workload.</b> An alumnus who earned an A- described the course as "paper-heavy" and said relearning how to read academic papers efficiently was the biggest early adjustment. Budget real time for readings, not just lecture-watching — and since test questions come straight from the reading list, treat readings as test prep, not optional enrichment.</div>
-
-    <div class="tip"><b>Buy your own copy of The Design of Everyday Things.</b> Multiple accounts single this book out as worth reading beyond the assigned chapters — it reframes how you look at everyday design, and DOET concepts resurface throughout homeworks and projects.</div>
-
-    <div class="tip"><b>Dr. Joyner's lecture videos are a genuine asset.</b> They're consistently described as clear and engaging — lean on them to build intuition, then use the readings to fill in the rigor the tests actually check.</div>
-
-    <div class="tip"><b>JDF formatting punishes procrastination.</b> One alumnus lost points converting a Word document into the required JDF/LaTeX format at the last minute for a project deadline. Do a dry run in Overleaf during prep week (see Pre-Semester tab) so submission day has zero formatting surprises.</div>
-
-    <div class="tip"><b>The team project is the most commonly-cited pain point</b> — not the content, but coordinating across teammates' schedules and time zones. As soon as teams form (~Week 10–11), agree explicitly on communication cadence and check-in expectations rather than assuming everyone will self-organize.</div>
-
-    <div class="tip"><b>AI Collaboration Policy is explicit and narrow.</b> The syllabus permits using AI the way you'd use a study partner — to discuss and check understanding — but nothing AI-generated may be copied directly into a submission, and AI tools may not be integrated directly into your writing environment while you work. Use it to think, not to draft.</div>
-
-    <div class="tip"><b>Consistency beats heroics.</b> Because there's no curve and the grade is a straight weighted average, small unforced errors (a missed survey, a late peer review, a skipped reading question on a quiz) cost you more relative to the 90% bar than any single assignment "acing" helps. The plan on this page is built to prevent small drops, week over week, rather than to chase a perfect individual score.</div>
-  </section>
-
-  <!-- SOURCES -->
   <section class="panel" id="sources">
-    <h2 class="section-title">Sources</h2>
-    <p class="section-desc">Everything on this page traces back to one of these. The official syllabus pages were fetched directly; the Reddit threads below are the ones you shared — flagged where direct fetch was blocked in this session.</p>
-    <ul class="src-list">
-      <li><a href="https://omscs6750.gatech.edu/spring-2025/" target="_blank">CS6750 Spring 2025 official syllabus &amp; full calendar</a><div class="src-note">Fetched directly. Source for grading breakdown, 17-week structure, per-week hour estimates, test coverage, and course policies.</div></li>
-      <li><a href="https://omscs6750.gatech.edu/spring-2023/class-participation/" target="_blank">CS6750 Spring 2023 — Class Participation policy</a><div class="src-note">Fetched directly. Source for the participation point table.</div></li>
-      <li><a href="https://www.anthonymattas.com/articles/my-first-omscs-course-human-computer-interaction-cs-6750" target="_blank">Anthony Mattas — "My First OMSCS Course: HCI (CS 6750)"</a><div class="src-note">Fetched directly. First-hand account (earned an A-): reading load, DOET recommendation, JDF/Overleaf pitfall, group project friction.</div></li>
-      <li><a href="https://www.omscentral.com/reviews/recent" target="_blank">OMSCentral — Recent Reviews</a><div class="src-note">Fetched, but is a cross-course firehose rather than an HCI-specific page — used qualitatively for "no curve / consistency wins" framing rather than direct HCI quotes.</div></li>
-      <li><a href="https://www.reddit.com/r/OMSCS/comments/1hjeo57/accessing_hci_course_material_early/" target="_blank">r/OMSCS — Accessing HCI course material early</a><div class="src-note">Reddit blocked direct fetch in this session. Referenced for the early-lecture-access strategy behind the Pre-Semester tab — worth opening yourself for specifics.</div></li>
-      <li><a href="https://www.reddit.com/r/OMSCS/comments/1nkelam/hci_quizzes_advice_on_how_to_prep/" target="_blank">r/OMSCS — HCI quizzes: advice on how to prep</a><div class="src-note">Reddit blocked direct fetch in this session.</div></li>
-      <li><a href="https://www.reddit.com/r/OMSCS/comments/1rb9m6j/hci_test_1_and_test_2_preparation/" target="_blank">r/OMSCS — HCI Test 1 and Test 2 preparation</a><div class="src-note">Reddit blocked direct fetch in this session.</div></li>
-      <li><a href="https://www.reddit.com/r/OMSCS/comments/1g8u8gv/so_this_is_what_were_doing_cs6750/" target="_blank">r/OMSCS — "So this is what we're doing" (CS6750)</a><div class="src-note">Reddit blocked direct fetch in this session.</div></li>
-    </ul>
-    <p class="section-desc" style="margin-top:16px;">Your checklist state is saved locally in this browser (no account, no server). Use the same browser/device to keep your progress, or re-check items on a new device.</p>
-    <button class="reset-btn" onclick="if(confirm('Reset every checkbox on this page?')){localStorage.clear();location.reload();}">Reset all checkboxes</button>
+    <h2 class="section-title">Sources &amp; how this works</h2>
+    <div class="card">
+      <h3>Architecture</h3>
+      <p>This is a local dashboard, not a public website. It runs a tiny Node server on your own computer (<code>server.js</code>, started by <code>start.bat</code>) that reads <code>🎓 OMSCS Backlog.md</code> straight from your Obsidian vault folder on disk — the same pattern as your <a href="https://github.com/joannemvsantos/rock-n-roll-expenses" target="_blank">rock-n-roll-expenses</a> dashboard. Nothing leaves your computer, and this page never writes back to the vault — all checking happens in Obsidian.</p>
+      <p>The page polls <code>/api/state</code> every 5 seconds, so edits you make in Obsidian normally show up here within a few seconds.</p>
+      <p>Your morning-briefing Todoist/Slack skill reads the same vault file independently — so this dashboard and your morning briefing are always looking at the same, single source of truth.</p>
+    </div>
+    <div class="card">
+      <h3>Sources for the plan content</h3>
+      <ul class="src-list">
+        <li><a href="https://omscs6750.gatech.edu/spring-2025/" target="_blank">CS6750 Spring 2025 official syllabus &amp; calendar</a></li>
+        <li><a href="https://omscs6750.gatech.edu/spring-2023/class-participation/" target="_blank">CS6750 Spring 2023 — Class Participation policy</a></li>
+        <li><a href="https://www.anthonymattas.com/articles/my-first-omscs-course-human-computer-interaction-cs-6750" target="_blank">Anthony Mattas — My First OMSCS Course: HCI (CS 6750)</a></li>
+        <li><a href="https://www.omscentral.com/reviews/recent" target="_blank">OMSCentral — Recent Reviews</a></li>
+      </ul>
+    </div>
   </section>
 
 </div>
 
-<footer>Built for Joanne · CS 6750 Fall 2026 · Dates projected from the Spring 2025 official calendar — confirm against the real Fall 2026 syllabus once posted.</footer>
+<footer>CS 6750 Fall 2026 · Local dashboard for Joanne · Obsidian vault is the only database</footer>
 
-<script>
-// ---------- Tabs ----------
-const tabButtons = document.querySelectorAll('nav.tabs button');
-const panels = document.querySelectorAll('section.panel');
-tabButtons.forEach(btn=>{
-  btn.addEventListener('click', ()=>{
-    tabButtons.forEach(b=>b.classList.remove('active'));
-    panels.forEach(p=>p.classList.remove('active'));
-    btn.classList.add('active');
-    document.getElementById(btn.dataset.tab).classList.add('active');
-    window.scrollTo({top:0, behavior:'instant'});
-  });
-});
-
-// ---------- Countdown ----------
-function updateCountdown(){
-  const target = new Date('2026-08-24T00:00:00');
-  const now = new Date();
-  const diff = Math.ceil((target-now)/(1000*60*60*24));
-  document.getElementById('daysLeft').textContent = diff>0 ? diff : 0;
-  document.getElementById('todayLabel').textContent = now.toLocaleDateString('en-US',{month:'long', day:'numeric', year:'numeric'});
-}
-updateCountdown();
-
-// ---------- Weekly plan data ----------
-const weekStart = new Date('2026-08-24T00:00:00');
-function fmtDate(d){ return d.toLocaleDateString('en-US',{month:'short', day:'numeric'}); }
-function addDays(d,n){ const r=new Date(d); r.setDate(r.getDate()+n); return r; }
-
-const weeks = [
-  {n:1, phase:"Pre-Course · Getting Started", title:"Start-of-course logistics", content:["Watch Lessons 1.1–1.3 (1 hr)"], assignments:["Complete CITI Training (7 hrs total — can be spread earlier)","Complete the Syllabus Comprehension Quiz (<0.5 hr)"], misc:["Complete the Start-of-Course Survey (<0.5 hr)","Read the full syllabus + linked pages (1 hr) — hunt for the hidden 1-pt survey link","Introduce yourself on the forum (<0.5 hr)","Bank early participation credit (~1 hr)"]},
-  {n:2, phase:"Content · Lectures & Homework", title:"Homework 1 opens", content:["Lessons 2.1–2.2 (1 hr)","Lessons 3.1–3.2 (1.5 hrs)"], assignments:["Complete Homework 1 (4 hrs)","Start Homework 2 (1.5 hrs)"], misc:["Bank participation credit (2 hrs)"]},
-  {n:3, phase:"Content · Lectures & Homework", title:"Homework 2 due", content:["Lessons 2.3–2.5 (2 hrs)","Lessons 3.3–3.4 (1.5 hrs)"], assignments:["Complete Homework 2 (2.5 hrs)","Start Homework 3 (1.5 hrs)"], misc:["Peer review Homework 1 (1 hr)","Participation credit (1.5 hrs)"]},
-  {n:4, phase:"Content · Lectures & Homework", title:"Homework 3 due", content:["Lessons 2.6–2.7 (2 hrs)","Lessons 3.5–3.6 (1.5 hrs)"], assignments:["Complete Homework 3 (2.5 hrs)","Start Homework 4 (1 hr)","Start brainstorming individual project ideas (1 hr)"], misc:["Peer review Homework 2 (1 hr)","Participation credit (1 hr)"]},
-  {n:5, phase:"Content · Lectures & Homework", title:"Homework 4 + Quarter-Course Survey", content:["Lessons 2.8–2.10 (1.5 hrs)","Lessons 3.7–3.8 (0.5 hr)"], assignments:["Complete Homework 4 (3 hrs)","Pick individual-project topic + start intro (1.5 hrs)"], misc:["Peer review Homework 3 (1 hr)","Quarter-Course Survey (<0.5 hr)","Honorlock quiz onboarding (<0.5 hr)","Participation credit (1.5 hrs)"]},
-  {n:6, phase:"Practice · Readings, Quizzes, Indiv. Project", title:"Quiz 1", content:["Readings 1.1–1.3 (1.5 hrs)","Reading 2.1 (0.5 hr)","Readings 3.1–3.3 (1.5 hrs)"], assignments:["Prep for + complete Quiz 1 (2.5 hrs)","Design needfinding plan for individual project (2 hrs)","Start executing needfinding plan (1 hr)"], misc:["Peer review Homework 4 (1 hr)"]},
-  {n:7, phase:"Practice · Readings, Quizzes, Indiv. Project", title:"Individual Project Check-In 1 + CITI due", content:["Readings 2.2–2.4 (1.5 hrs)","Reading 3.4 (1 hr)"], assignments:["Individual Project Check-In 1 (0.5 hr)","Execute needfinding plan (2.5 hrs)","Brainstorm for individual project (1.5 hrs)","Build initial prototypes (3 hrs)"], misc:["Confirm CITI Training submitted (<0.5 hr)"]},
-  {n:8, phase:"Practice · Readings, Quizzes, Indiv. Project", title:"Quiz 2 + Check-In 2", content:["Readings 2.5–2.7 (2 hrs)","Reading 3.5 (1 hr)"], assignments:["Individual Project Check-In 2 (0.5 hr)","Prep for + complete Quiz 2 (2.5 hrs)","Plan + run evaluation of prototypes (3 hrs)"], misc:["Peer review Check-In 1 (1 hr)","Honorlock test onboarding (<0.5 hr)"]},
-  {n:9, phase:"Practice · Readings, Quizzes, Indiv. Project", title:"Test 1 week", content:["Reading 3.6 (1 hr)"], assignments:["Prep for + complete Test 1 (3 hrs)","Prep for + complete Quiz 3 (2.5 hrs)","Individual Project Check-In 3 (0.5 hr)","Plan 2nd prototype iteration (0.5 hr)","Start final prototype (1.5 hrs)"], misc:["Peer review Check-In 2 (1 hr)","Mid-Course Survey (<0.5 hr)"]},
-  {n:10, phase:"Practice · Readings, Quizzes, Indiv. Project", title:"Quiz 4 + Check-In 4", content:["Readings 2.8–2.10 (1.5 hrs)","Readings 3.7–3.8 (2 hrs)"], assignments:["Prep for + complete Quiz 4 (2.5 hrs)","Individual Project Check-In 4 (0.5 hr)","Finish final prototype (2.5 hrs)"], misc:["Peer review Check-In 3 (1 hr)","Team-formation survey (<0.5 hr)"]},
-  {n:11, phase:"Practice · Individual Project wraps", title:"Individual Project due", content:["—"], assignments:["Create video prototype (1 hr)","Plan + run final evaluation (5 hrs)","Write + submit Individual Project document (3 hrs)"], misc:["Peer review Check-In 4 (1 hr)"]},
-  {n:12, phase:"Application · Team Project", title:"Team Project Check-In 1", content:["Lesson 4.1"], assignments:["Team kickoff: agree on communication norms + roles (this is where most team friction starts if skipped)","Team needfinding plan + execution","Team Project Check-In 1"], misc:["Peer review a teammate/classmate deliverable"]},
-  {n:13, phase:"Application · Team Project", title:"Team Project Check-In 2", content:["Lesson 4.2"], assignments:["Team brainstorming + design alternatives","Initial team prototypes","Team Project Check-In 2"], misc:["Peer review"]},
-  {n:14, phase:"Application · Team Project", title:"Team Project Check-In 3", content:["Lesson 4.3"], assignments:["Plan + run team prototype evaluation","Begin higher-fidelity prototype","Team Project Check-In 3"], misc:["Peer review"]},
-  {n:15, phase:"Application · Team Project", title:"Team Project Check-In 4", content:["—"], assignments:["Finish higher-fidelity prototype + start video prototype","Team Project Check-In 4"], misc:["Peer review"]},
-  {n:16, phase:"Application · Team Project wraps", title:"Team Project + Test 2 due", content:["—"], assignments:["Final team evaluation + video prototype","Write + submit Team Project document","Prep for + complete Test 2"], misc:["Peer review"]},
-  {n:17, phase:"Victory Lap", title:"End-of-Course wrap-up", content:["Lessons 5.1–5.3 (course recap, related fields, next steps)"], assignments:["End-of-Course Survey","CIOS course evaluation"], misc:["Finish any remaining participation credit — finalized Friday of this week"]},
-];
-
-const container = document.getElementById('weeksContainer');
-weeks.forEach((w,idx)=>{
-  const start = addDays(weekStart, idx*7);
-  const due = addDays(start,6);
-  const details = document.createElement('details');
-  details.className='week';
-  if(idx===0) details.open = true;
-
-  const mkList = (title, items, prefix) => {
-    if(!items || !items.length) return '';
-    let html = `<h4>${title}</h4>`;
-    items.forEach((it,i)=>{
-      html += `<label class="chk"><input type="checkbox" data-key="wk${w.n}-${prefix}${i}"><span class="txt">${it}</span></label>`;
-    });
-    return html;
-  };
-
-  details.innerHTML = `
-    <summary>
-      <div class="wk-left">
-        <div class="wk-badge">WK ${w.n}</div>
-        <div>
-          <div class="wk-title">${w.title}</div>
-          <div class="wk-due">${fmtDate(start)} – ${fmtDate(due)} · due ${fmtDate(due)} 11:59pm AoE</div>
-          <div class="wk-phase">${w.phase}</div>
-        </div>
-      </div>
-      <div class="wk-mini-progress"><div class="wk-mini-fill" data-weekfill="${w.n}"></div></div>
-    </summary>
-    <div class="wk-body">
-      ${mkList('Content', w.content, 'c')}
-      ${mkList('Assignments', w.assignments, 'a')}
-      ${mkList('Participation / misc', w.misc, 'm')}
-    </div>
-  `;
-  container.appendChild(details);
-});
-
-// ---------- Checkbox persistence + progress ----------
-const STORAGE_PREFIX = 'cs6750_';
-function allCheckboxes(){ return Array.from(document.querySelectorAll('input[type=checkbox][data-key]')); }
-
-function loadState(){
-  allCheckboxes().forEach(cb=>{
-    const v = localStorage.getItem(STORAGE_PREFIX+cb.dataset.key);
-    if(v==='1') cb.checked = true;
-  });
-}
-function saveState(cb){
-  localStorage.setItem(STORAGE_PREFIX+cb.dataset.key, cb.checked ? '1':'0');
-}
-function updateProgress(){
-  const boxes = allCheckboxes();
-  const checked = boxes.filter(b=>b.checked).length;
-  const pct = boxes.length ? Math.round((checked/boxes.length)*100) : 0;
-  document.getElementById('overallPct').textContent = pct+'%';
-  document.getElementById('overallBar').style.width = pct+'%';
-  document.getElementById('overallCaption').textContent = `${checked} of ${boxes.length} items checked`;
-
-  // per-week mini progress
-  weeks.forEach(w=>{
-    const wkBoxes = document.querySelectorAll(`input[data-key^="wk${w.n}-"]`);
-    const wkChecked = Array.from(wkBoxes).filter(b=>b.checked).length;
-    const wkPct = wkBoxes.length ? Math.round((wkChecked/wkBoxes.length)*100) : 0;
-    const fillEl = document.querySelector(`[data-weekfill="${w.n}"]`);
-    if(fillEl) fillEl.style.width = wkPct+'%';
-  });
-}
-
-document.addEventListener('change', (e)=>{
-  if(e.target.matches('input[type=checkbox][data-key]')){
-    saveState(e.target);
-    updateProgress();
-  }
-});
-
-loadState();
-updateProgress();
-</script>
-
+<script src="app.js"></script>
 </body>
 </html>

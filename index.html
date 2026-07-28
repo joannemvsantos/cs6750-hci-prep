@@ -39,25 +39,25 @@
 
   <section class="panel active" id="dashboard">
     <h2 class="section-title">This week, at a glance</h2>
-    <p class="section-desc">Pulled live from <code>🎓 OMSCS Backlog.md</code> in your vault — check things off in Obsidian and they'll show here within 5 seconds. This page never writes to your vault.</p>
+    <p class="section-desc">Synced with <code>🎓 OMSCS Backlog.md</code> in your vault, both ways: check something off in Obsidian and it shows up here within 5 seconds; click it here and it writes straight into that file. One database, two views.</p>
     <div id="dashboardSummary"></div>
   </section>
 
   <section class="panel" id="weeks">
     <h2 class="section-title">17-week deliverable plan <span class="badge-inline">Projected Fall 2026 dates</span></h2>
-    <p class="section-desc">Status (done / overdue / upcoming) comes straight from the checkbox and date on each Wk line in the vault — the same signal your morning-briefing skill uses. Check the box in Obsidian once a deliverable is submitted.</p>
+    <p class="section-desc">Status (done / overdue / upcoming) comes straight from the checkbox and date on each Wk line in the vault — the same signal your morning-briefing skill uses. Click a card to check it off (or do it in Obsidian — either way updates the same file).</p>
     <div id="weeksContainer"></div>
   </section>
 
   <section class="panel" id="reading">
     <h2 class="section-title">Required Reading List</h2>
-    <p class="section-desc">Test 1 draws from Weeks 1–6, Test 2 from Weeks 7–13. Checked state comes from the vault.</p>
+    <p class="section-desc">Test 1 draws from Weeks 1–6, Test 2 from Weeks 7–13. Click to check off — writes to the vault.</p>
     <div id="readingContainer"></div>
   </section>
 
   <section class="panel" id="habits">
     <h2 class="section-title">Habits &amp; prep checklists</h2>
-    <p class="section-desc">Daily / Weekly / Fall-Prep / Backlog-ideas sections from the vault, read-only here.</p>
+    <p class="section-desc">Daily / Weekly / Fall-Prep / Backlog-ideas sections from the vault — click to check off.</p>
     <div id="habitsContainer"></div>
   </section>
 
@@ -120,9 +120,9 @@
     <h2 class="section-title">Sources &amp; how this works</h2>
     <div class="card">
       <h3>Architecture</h3>
-      <p>This is a local dashboard, not a public website. It runs a tiny Node server on your own computer (<code>server.js</code>, started by <code>start.bat</code>) that reads <code>🎓 OMSCS Backlog.md</code> straight from your Obsidian vault folder on disk — the same pattern as your <a href="https://github.com/joannemvsantos/rock-n-roll-expenses" target="_blank">rock-n-roll-expenses</a> dashboard. Nothing leaves your computer, and this page never writes back to the vault — all checking happens in Obsidian.</p>
-      <p>The page polls <code>/api/state</code> every 5 seconds, so edits you make in Obsidian normally show up here within a few seconds.</p>
-      <p>Your morning-briefing Todoist/Slack skill reads the same vault file independently — so this dashboard and your morning briefing are always looking at the same, single source of truth.</p>
+      <p>This is a local dashboard, not a public website. It runs a tiny Node server on your own computer (<code>server.js</code>, started by <code>start.bat</code>) that reads and writes <code>🎓 OMSCS Backlog.md</code> straight in your Obsidian vault folder on disk — the same pattern as your <a href="https://github.com/joannemvsantos/rock-n-roll-expenses" target="_blank">rock-n-roll-expenses</a> dashboard. Nothing leaves your computer.</p>
+      <p>The page polls <code>/api/state</code> every 5 seconds, so edits you make in Obsidian normally show up here within a few seconds. Clicking a checkbox here does the reverse — it edits that exact line in the vault file immediately (only that one line; nothing else in the file is touched) and Obsidian will pick it up the next time you look at the file.</p>
+      <p>Your morning-briefing Todoist/Slack skill reads the same vault file independently — so this dashboard, Obsidian, and your morning briefing are always looking at the same, single source of truth. The skill also ignores Todoist's own "completed" state for these tasks specifically — the vault checkbox is what decides done vs. not-done, so checking something off here or in Obsidian is what actually stops the nagging, not checking off the Todoist card.</p>
     </div>
     <div class="card">
       <h3>Sources for the plan content</h3>

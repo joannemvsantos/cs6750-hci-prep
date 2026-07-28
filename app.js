@@ -1,4 +1,5 @@
 const POLL_MS = 5000;
+let pending = false; // true while a toggle click is in flight, to avoid double-clicks racing
 
 const tabButtons = document.querySelectorAll('nav.tabs button');
 const panels = document.querySelectorAll('section.panel');
@@ -17,8 +18,11 @@ function escapeHtml(s) {
   }[c]));
 }
 
-function itemRow(item) {
-  return `<div class="item-row ${item.done ? 'done' : ''}"><div class="box"></div><span class="txt">${escapeHtml(item.label)}</span></div>`;
+function itemRow(item, kind) {
+  const key = (kind === 'weeklyDeliverables' || kind === 'readingList') ? item.week : item.label;
+  return `<div class="item-row toggleable ${item.done ? 'done' : ''}" data-kind="${kind}" data-key="${escapeHtml(key)}">
+    <div class="box"></div><span class="txt">${escapeHtml(item.label)}</span>
+  </div>`;
 }
 
 function weekStatus(wk, today) {
@@ -47,7 +51,7 @@ function render(state) {
   document.getElementById('overallPct').textContent = pct + '%';
   document.getElementById('overallBar').style.width = pct + '%';
   document.getElementById('overallCaption').textContent = `${state.totals.done} of ${state.totals.total} vault checkboxes checked`;
-  document.getElementById('syncLine').textContent = `Last synced ${new Date(state.syncedAt).toLocaleTimeString()} — polling your vault every 5s`;
+  document.getElementById('syncLine').textContent = `Last synced ${new Date(state.syncedAt).toLocaleTimeString()} — polling your vault every 5s · click any item to check it off (writes straight to Obsidian)`;
 
   // Dashboard tab summary
   const wkDone = state.weeklyDeliverables.filter((w) => w.done).length;
@@ -73,13 +77,14 @@ function render(state) {
   }
   document.getElementById('dashboardSummary').innerHTML = summaryHtml;
 
-  // Weeks tab
+  // Weeks tab — the whole card is clickable, toggling the Wk<N> deliverable checkbox
   let weeksHtml = '';
   state.weeklyDeliverables.forEach((wk) => {
     const s = weekStatus(wk, today);
     weeksHtml += `
-      <div class="week-card">
+      <div class="week-card toggleable ${wk.done ? 'done' : ''}" data-kind="weeklyDeliverables" data-key="${wk.week}">
         <div class="wk-left">
+          <div class="box"></div>
           <div class="wk-badge">WK ${wk.week}</div>
           <div>
             <div class="wk-title">${escapeHtml(wk.label)}</div>
@@ -95,21 +100,21 @@ function render(state) {
   const test1 = state.readingList.filter((r) => r.test === 'Test 1');
   const test2 = state.readingList.filter((r) => r.test === 'Test 2');
   let readingHtml = '<div class="card"><div class="section-block"><h4>Test 1 material (Weeks 1–6)</h4>';
-  readingHtml += test1.map(itemRow).join('');
+  readingHtml += test1.map((r) => itemRow(r, 'readingList')).join('');
   readingHtml += '</div><div class="section-block"><h4>Test 2 material (Weeks 7–13)</h4>';
-  readingHtml += test2.map(itemRow).join('');
+  readingHtml += test2.map((r) => itemRow(r, 'readingList')).join('');
   readingHtml += '</div></div>';
   document.getElementById('readingContainer').innerHTML = readingHtml;
 
   // Habits tab
   let habitsHtml = '<div class="card"><div class="section-block"><h4>Daily</h4>';
-  habitsHtml += state.daily.map(itemRow).join('');
+  habitsHtml += state.daily.map((d) => itemRow(d, 'daily')).join('');
   habitsHtml += '</div><div class="section-block"><h4>Weekly</h4>';
-  habitsHtml += state.weekly.map(itemRow).join('');
+  habitsHtml += state.weekly.map((w) => itemRow(w, 'weekly')).join('');
   habitsHtml += '</div><div class="section-block"><h4>Now — Fall Prep</h4>';
-  habitsHtml += state.fallPrep.map(itemRow).join('');
+  habitsHtml += state.fallPrep.map((f) => itemRow(f, 'fallPrep')).join('');
   habitsHtml += '</div><div class="section-block"><h4>Backlog ideas</h4>';
-  habitsHtml += state.backlogIdeas.map(itemRow).join('');
+  habitsHtml += state.backlogIdeas.map((b) => itemRow(b, 'backlogIdeas')).join('');
   habitsHtml += '</div></div>';
   document.getElementById('habitsContainer').innerHTML = habitsHtml;
 }
@@ -134,6 +139,32 @@ async function poll() {
     document.getElementById('syncLine').textContent = 'Sync failed — retrying…';
   }
 }
+
+async function toggle(kind, key) {
+  if (pending) return;
+  pending = true;
+  document.getElementById('syncLine').textContent = 'Saving to your vault…';
+  try {
+    const res = await fetch('/api/toggle', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ kind, key })
+    });
+    const state = await res.json();
+    if (!res.ok || state.error) throw new Error(state.error || 'Toggle failed');
+    render(state);
+  } catch (e) {
+    document.getElementById('syncLine').textContent = `Couldn't save: ${e.message}`;
+  } finally {
+    pending = false;
+  }
+}
+
+document.addEventListener('click', (e) => {
+  const row = e.target.closest('[data-kind]');
+  if (!row) return;
+  toggle(row.dataset.kind, row.dataset.key);
+});
 
 poll();
 setInterval(poll, POLL_MS);

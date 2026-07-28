@@ -1,5 +1,7 @@
 const POLL_MS = 5000;
 let pending = false; // true while a toggle click is in flight, to avoid double-clicks racing
+let lastState = null; // most recent /api/state payload, so expand/collapse can re-render without a refetch
+const expandedWeeks = new Set(); // week numbers currently expanded in the 17-Week Plan tab
 
 const tabButtons = document.querySelectorAll('nav.tabs button');
 const panels = document.querySelectorAll('section.panel');
@@ -34,7 +36,13 @@ function weekStatus(wk, today) {
   return { cls: 'status-upcoming', label: 'Upcoming' };
 }
 
+function detailBlock(title, items) {
+  if (!items || !items.length) return '';
+  return `<h4>${title}</h4><ul>${items.map((i) => `<li>${escapeHtml(i)}</li>`).join('')}</ul>`;
+}
+
 function render(state) {
+  lastState = state;
   const today = new Date();
 
   // Hero
@@ -77,21 +85,31 @@ function render(state) {
   }
   document.getElementById('dashboardSummary').innerHTML = summaryHtml;
 
-  // Weeks tab — the whole card is clickable, toggling the Wk<N> deliverable checkbox
+  // Weeks tab — click the checkbox to mark a week done (writes to the vault);
+  // click anywhere else on the card to expand/collapse its Content/Assignments/Participation detail.
   let weeksHtml = '';
   state.weeklyDeliverables.forEach((wk) => {
     const s = weekStatus(wk, today);
+    const isOpen = expandedWeeks.has(wk.week);
+    const d = wk.detail || {};
+    const bodyHtml = detailBlock('Content', d.content) + detailBlock('Assignments', d.assignments) + detailBlock('Participation / misc', d.misc);
     weeksHtml += `
-      <div class="week-card toggleable ${wk.done ? 'done' : ''}" data-kind="weeklyDeliverables" data-key="${wk.week}">
-        <div class="wk-left">
-          <div class="box"></div>
-          <div class="wk-badge">WK ${wk.week}</div>
-          <div>
-            <div class="wk-title">${escapeHtml(wk.label)}</div>
-            <div class="wk-due">Due ${wk.due} 11:59pm AoE</div>
+      <div class="week-card ${wk.done ? 'done' : ''} ${isOpen ? 'open' : ''}" data-week="${wk.week}">
+        <div class="wk-summary">
+          <div class="wk-left">
+            <div class="box toggle-box" data-kind="weeklyDeliverables" data-key="${wk.week}"></div>
+            <div class="wk-badge">WK ${wk.week}</div>
+            <div>
+              <div class="wk-title">${escapeHtml(wk.label)}</div>
+              <div class="wk-due">Due ${wk.due} 11:59pm AoE</div>
+            </div>
+          </div>
+          <div class="wk-right">
+            <div class="status-pill ${s.cls}">${s.label}</div>
+            <div class="chevron">${isOpen ? '▲' : '▼'}</div>
           </div>
         </div>
-        <div class="status-pill ${s.cls}">${s.label}</div>
+        ${isOpen && bodyHtml ? `<div class="wk-body">${bodyHtml}</div>` : ''}
       </div>`;
   });
   document.getElementById('weeksContainer').innerHTML = weeksHtml;
@@ -161,6 +179,21 @@ async function toggle(kind, key) {
 }
 
 document.addEventListener('click', (e) => {
+  // Week cards: checkbox toggles done state, the rest of the card expands/collapses detail.
+  const weekCard = e.target.closest('.week-card');
+  if (weekCard) {
+    const box = e.target.closest('.toggle-box');
+    if (box) {
+      toggle(box.dataset.kind, box.dataset.key);
+      return;
+    }
+    const wk = Number(weekCard.dataset.week);
+    if (expandedWeeks.has(wk)) expandedWeeks.delete(wk); else expandedWeeks.add(wk);
+    if (lastState) render(lastState);
+    return;
+  }
+
+  // Everything else (Reading tab / Habits tab rows): whole row toggles.
   const row = e.target.closest('[data-kind]');
   if (!row) return;
   toggle(row.dataset.kind, row.dataset.key);

@@ -16,31 +16,46 @@ const BACKLOG_FILE = config.backlogFile;
 const WK_RE = /^- \[([ xX])\] CS6750 Wk(\d+) \(([^)]+)\): next (\d{4}-\d{2}-\d{2})/;
 const READING_RE = /^- \[([ xX])\] Week (\d+) — (.+)$/;
 const CHECKBOX_RE = /^- \[([ xX])\] (.+)$/;
+const DETAIL_RE = /^- (Content|Assignments|Participation\/misc): (.+)$/;
 const SEMESTER_RE = /Semester start:.*?(\d{4}-\d{2}-\d{2})/;
 const LECTURE_RE = /Current lecture progress: (.+)$/;
+
+const DETAIL_FIELD = { Content: 'content', Assignments: 'assignments', 'Participation/misc': 'misc' };
 
 // Walks every line of the Backlog file, tracking which ## section (and, inside the
 // Required Reading List, which **Test N material** subsection) each line belongs to.
 // Calls onItem(...) for every checkbox-syntax line found, with enough info to both
-// render it (parsing) and find it again later (toggling).
-function walkLines(lines, onItem) {
+// render it (parsing) and find it again later (toggling). Also calls onDetail(...) for
+// the plain (non-checkbox) "- Content: ...", "- Assignments: ...", "- Participation/misc: ..."
+// sub-bullets that sit under each Wk line, attaching them to whichever Wk was seen most recently.
+function walkLines(lines, onItem, onDetail) {
   let section = '';
   let subsection = '';
+  let currentWeek = null;
 
   lines.forEach((rawLine, idx) => {
     const trimmed = rawLine.trim();
 
-    if (trimmed.startsWith('## ')) { section = trimmed.replace(/^##\s*/, ''); subsection = ''; return; }
+    if (trimmed.startsWith('## ')) { section = trimmed.replace(/^##\s*/, ''); subsection = ''; currentWeek = null; return; }
     if (trimmed.startsWith('### ')) return; // sub-heading, keep parent section
     if (/^\*\*Test 1 material\*\*/.test(trimmed)) { subsection = 'Test 1'; return; }
     if (/^\*\*Test 2 material\*\*/.test(trimmed)) { subsection = 'Test 2'; return; }
 
     const wkMatch = trimmed.match(WK_RE);
     if (wkMatch) {
+      currentWeek = parseInt(wkMatch[2], 10);
       onItem({
-        idx, kind: 'weeklyDeliverables', key: parseInt(wkMatch[2], 10),
+        idx, kind: 'weeklyDeliverables', key: currentWeek,
         label: wkMatch[3], due: wkMatch[4], done: wkMatch[1].toLowerCase() === 'x'
       });
+      return;
+    }
+
+    const detailMatch = trimmed.match(DETAIL_RE);
+    if (detailMatch && currentWeek !== null && onDetail) {
+      const field = DETAIL_FIELD[detailMatch[1]];
+      const items = detailMatch[2] === '—' ? [] : detailMatch[2].split(';').map((s) => s.trim()).filter(Boolean);
+      onDetail(currentWeek, field, items);
       return;
     }
 
@@ -79,7 +94,18 @@ function buildState() {
   const { lines } = splitLines(raw);
 
   const groups = { weeklyDeliverables: [], readingList: [], daily: [], weekly: [], fallPrep: [], backlogIdeas: [] };
-  walkLines(lines, (item) => groups[item.kind].push(item));
+  const details = {}; // week number -> { content: [], assignments: [], misc: [] }
+  walkLines(
+    lines,
+    (item) => groups[item.kind].push(item),
+    (week, field, items) => {
+      if (!details[week]) details[week] = { content: [], assignments: [], misc: [] };
+      details[week][field] = items;
+    }
+  );
+  groups.weeklyDeliverables.forEach((wk) => {
+    wk.detail = details[wk.key] || { content: [], assignments: [], misc: [] };
+  });
 
   let semesterStart = null;
   let lectureProgress = null;

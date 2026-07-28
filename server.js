@@ -14,9 +14,9 @@ const config = JSON.parse(fs.readFileSync(path.join(__dirname, 'vault-config.jso
 const BACKLOG_FILE = config.backlogFile;
 
 const WK_RE = /^- \[([ xX])\] CS6750 Wk(\d+) \(([^)]+)\): next (\d{4}-\d{2}-\d{2})/;
+const WEEK_ITEM_RE = /^- \[([ xX])\] (Content|Assignments|Participation\/misc): (.+)$/;
 const READING_RE = /^- \[([ xX])\] Week (\d+) — (.+)$/;
 const CHECKBOX_RE = /^- \[([ xX])\] (.+)$/;
-const DETAIL_RE = /^- (Content|Assignments|Participation\/misc): (.+)$/;
 const SEMESTER_RE = /Semester start:.*?(\d{4}-\d{2}-\d{2})/;
 const LECTURE_RE = /Current lecture progress: (.+)$/;
 
@@ -25,10 +25,11 @@ const DETAIL_FIELD = { Content: 'content', Assignments: 'assignments', 'Particip
 // Walks every line of the Backlog file, tracking which ## section (and, inside the
 // Required Reading List, which **Test N material** subsection) each line belongs to.
 // Calls onItem(...) for every checkbox-syntax line found, with enough info to both
-// render it (parsing) and find it again later (toggling). Also calls onDetail(...) for
-// the plain (non-checkbox) "- Content: ...", "- Assignments: ...", "- Participation/misc: ..."
-// sub-bullets that sit under each Wk line, attaching them to whichever Wk was seen most recently.
-function walkLines(lines, onItem, onDetail) {
+// render it (parsing) and find it again later (toggling). The per-week detail items
+// ("- [ ] Content: ...", "- [ ] Assignments: ...", "- [ ] Participation/misc: ...") are
+// themselves real checkboxes, attached to whichever Wk was seen most recently, with
+// kind 'weekDetail' — each is its own independently toggleable checklist item.
+function walkLines(lines, onItem) {
   let section = '';
   let subsection = '';
   let currentWeek = null;
@@ -51,11 +52,15 @@ function walkLines(lines, onItem, onDetail) {
       return;
     }
 
-    const detailMatch = trimmed.match(DETAIL_RE);
-    if (detailMatch && currentWeek !== null && onDetail) {
-      const field = DETAIL_FIELD[detailMatch[1]];
-      const items = detailMatch[2] === '—' ? [] : detailMatch[2].split(';').map((s) => s.trim()).filter(Boolean);
-      onDetail(currentWeek, field, items);
+    const weekItemMatch = trimmed.match(WEEK_ITEM_RE);
+    if (weekItemMatch && currentWeek !== null) {
+      const category = weekItemMatch[2];
+      const label = weekItemMatch[3];
+      onItem({
+        idx, kind: 'weekDetail', key: `${currentWeek}::${category}::${label}`,
+        week: currentWeek, field: DETAIL_FIELD[category], label,
+        done: weekItemMatch[1].toLowerCase() === 'x'
+      });
       return;
     }
 
@@ -93,24 +98,23 @@ function buildState() {
   const raw = fs.readFileSync(BACKLOG_FILE, 'utf8');
   const { lines } = splitLines(raw);
 
-  const groups = { weeklyDeliverables: [], readingList: [], daily: [], weekly: [], fallPrep: [], backlogIdeas: [] };
-  const details = {}; // week number -> { content: [], assignments: [], misc: [] }
-  walkLines(
-    lines,
-    (item) => groups[item.kind].push(item),
-    (week, field, items) => {
-      if (!details[week]) details[week] = { content: [], assignments: [], misc: [] };
-      details[week][field] = items;
-    }
-  );
+  const groups = { weeklyDeliverables: [], readingList: [], weekDetail: [], daily: [], weekly: [], fallPrep: [], backlogIdeas: [] };
+  walkLines(lines, (item) => groups[item.kind].push(item));
+
   // The client (app.js) reads a "week" field for display/toggle purposes — alias it from
   // the internal "key" field used for locating the line in the file (kept for toggling).
-  groups.weeklyDeliverables.forEach((wk) => {
-    wk.week = wk.key;
-    wk.detail = details[wk.key] || { content: [], assignments: [], misc: [] };
+  groups.weeklyDeliverables.forEach((wk) => { wk.week = wk.key; });
+  groups.readingList.forEach((r) => { r.week = r.key; });
+
+  // Fold the flat weekDetail checklist items into each week's structured breakdown
+  // (content / assignments / misc), each entry keeping its own key/label/done for toggling.
+  const details = {};
+  groups.weekDetail.forEach((item) => {
+    if (!details[item.week]) details[item.week] = { content: [], assignments: [], misc: [] };
+    details[item.week][item.field].push({ key: item.key, label: item.label, done: item.done });
   });
-  groups.readingList.forEach((r) => {
-    r.week = r.key;
+  groups.weeklyDeliverables.forEach((wk) => {
+    wk.detail = details[wk.key] || { content: [], assignments: [], misc: [] };
   });
 
   let semesterStart = null;

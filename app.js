@@ -36,9 +36,15 @@ function weekStatus(wk, today) {
   return { cls: 'status-upcoming', label: 'Upcoming' };
 }
 
-function detailBlock(title, items) {
+function weekDetailRow(item) {
+  return `<div class="item-row toggleable ${item.done ? 'done' : ''}" data-kind="weekDetail" data-key="${escapeHtml(item.key)}">
+    <div class="box"></div><span class="txt">${escapeHtml(item.label)}</span>
+  </div>`;
+}
+
+function detailChecklist(title, items) {
   if (!items || !items.length) return '';
-  return `<h4>${title}</h4><ul>${items.map((i) => `<li>${escapeHtml(i)}</li>`).join('')}</ul>`;
+  return `<h4>${title}</h4>${items.map(weekDetailRow).join('')}`;
 }
 
 function render(state) {
@@ -92,7 +98,7 @@ function render(state) {
     const s = weekStatus(wk, today);
     const isOpen = expandedWeeks.has(wk.week);
     const d = wk.detail || {};
-    const bodyHtml = detailBlock('Content', d.content) + detailBlock('Assignments', d.assignments) + detailBlock('Participation / misc', d.misc);
+    const bodyHtml = detailChecklist('Content', d.content) + detailChecklist('Assignments', d.assignments) + detailChecklist('Participation / misc', d.misc);
     weeksHtml += `
       <div class="week-card ${wk.done ? 'done' : ''} ${isOpen ? 'open' : ''}" data-week="${wk.week}">
         <div class="wk-summary">
@@ -179,24 +185,25 @@ async function toggle(kind, key) {
 }
 
 document.addEventListener('click', (e) => {
-  // Week cards: checkbox toggles done state, the rest of the card expands/collapses detail.
-  const weekCard = e.target.closest('.week-card');
-  if (weekCard) {
-    const box = e.target.closest('.toggle-box');
-    if (box) {
-      toggle(box.dataset.kind, box.dataset.key);
-      return;
-    }
-    const wk = Number(weekCard.dataset.week);
-    if (expandedWeeks.has(wk)) expandedWeeks.delete(wk); else expandedWeeks.add(wk);
-    if (lastState) render(lastState);
+  // Highest priority: anything with a data-kind is a toggle target — the week's own
+  // checkbox, a weekDetail checklist row inside an expanded card, or a Reading/Habits row.
+  // Checking this first means clicks inside the expanded detail checklist never get
+  // mistaken for a card-expand click.
+  const toggleTarget = e.target.closest('[data-kind]');
+  if (toggleTarget) {
+    toggle(toggleTarget.dataset.kind, toggleTarget.dataset.key);
     return;
   }
 
-  // Everything else (Reading tab / Habits tab rows): whole row toggles.
-  const row = e.target.closest('[data-kind]');
-  if (!row) return;
-  toggle(row.dataset.kind, row.dataset.key);
+  // Otherwise, clicking the summary strip of a week card (title/badge/due/status/chevron,
+  // but not the checkbox — that was already handled above) expands/collapses its detail.
+  const summary = e.target.closest('.wk-summary');
+  if (summary) {
+    const card = summary.closest('.week-card');
+    const wk = Number(card.dataset.week);
+    if (expandedWeeks.has(wk)) expandedWeeks.delete(wk); else expandedWeeks.add(wk);
+    if (lastState) render(lastState);
+  }
 });
 
 poll();

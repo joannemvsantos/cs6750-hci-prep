@@ -143,8 +143,7 @@ p.section-desc{ color:#5b6472; max-width:720px; margin-top:0; }
   letter-spacing:.05em; color:#8a8f96; margin:12px 0 4px;
 }
 .wk-body h4:first-child{ margin-top:0; }
-.wk-body ul{ margin:0 0 4px; padding-left:18px; }
-.wk-body li{ font-size:.92rem; margin-bottom:3px; }
+.wk-body .item-row{ font-size:.92rem; padding:4px; }
 .wk-left{ display:flex; align-items:center; gap:12px; }
 .wk-badge{
   background:var(--navy); color:var(--gold-2); font-weight:700; font-size:12.5px;
